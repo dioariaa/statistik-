@@ -1,0 +1,335 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.wrap { padding: 8px 0; font-family: var(--font-sans); }
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.filter-btn { padding: 6px 14px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 20px; background: var(--color-background-primary); color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; }
+.filter-btn.active { border-color: #534AB7; background: #EEEDFE; color: #3C3489; }
+.search-wrap { margin-bottom: 14px; }
+.search-wrap input { width: 100%; padding: 8px 12px; font-size: 13px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); outline: none; }
+.cards-grid { display: grid; gap: 10px; }
+.uji-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
+.uji-card:hover { border-color: var(--color-border-secondary); }
+.uji-card.open { border-color: #534AB7; }
+.card-header { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.card-icon { min-width: 36px; height: 36px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.icon-nominal { background: #FAECE7; }
+.icon-ordinal { background: #FAEEDA; }
+.icon-interval { background: #EEEDFE; }
+.card-meta { flex: 1; min-width: 0; }
+.card-name { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+.card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+.t-nominal { background: #FAECE7; color: #712B13; }
+.t-ordinal { background: #FAEEDA; color: #633806; }
+.t-interval { background: #EEEDFE; color: #3C3489; }
+.t-parametrik { background: #E6F1FB; color: #0C447C; }
+.t-nonpara { background: #E1F5EE; color: #085041; }
+.chevron { font-size: 14px; color: var(--color-text-tertiary); transition: transform 0.2s; }
+.uji-card.open .chevron { transform: rotate(180deg); }
+.card-body { display: none; padding: 0 14px 14px; border-top: 0.5px solid var(--color-border-tertiary); margin-top: 0; }
+.uji-card.open .card-body { display: block; }
+.body-section { margin-top: 12px; }
+.body-label { font-size: 10px; font-weight: 500; color: #534AB7; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+.body-text { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
+.body-text strong { color: var(--color-text-primary); font-weight: 500; }
+.example-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; margin-top: 6px; font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; border-left: 2px solid #534AB7; }
+.no-result { text-align: center; padding: 32px; color: var(--color-text-tertiary); font-size: 13px; }
+.count-info { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 10px; }
+</style>
+
+<h2 class="sr-only">Penjelasan lengkap setiap alat uji statistik sosial berdasarkan skala data dan tujuan analisis</h2>
+
+<div class="wrap">
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="Cari nama uji... (contoh: Anova, Spearman, t-test)" oninput="filterCards()" />
+  </div>
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('semua',this)">Semua</button>
+    <button class="filter-btn" onclick="setFilter('nominal',this)">Nominal</button>
+    <button class="filter-btn" onclick="setFilter('ordinal',this)">Ordinal</button>
+    <button class="filter-btn" onclick="setFilter('interval',this)">Interval/Rasio</button>
+    <button class="filter-btn" onclick="setFilter('parametrik',this)">Parametrik</button>
+    <button class="filter-btn" onclick="setFilter('nonpara',this)">Non-Parametrik</button>
+  </div>
+  <div class="count-info" id="countInfo"></div>
+  <div class="cards-grid" id="cardsGrid"></div>
+</div>
+
+<script>
+const data = [
+  {
+    name: "Binomial Test",
+    skala: ["nominal"], jenis: ["nonpara"],
+    icon: "icon-nominal", emoji: "2️⃣",
+    deskripsi: "Menguji apakah proporsi observasi pada dua kategori sesuai dengan proporsi yang dihipotesiskan. Digunakan ketika data hanya memiliki dua kemungkinan hasil (ya/tidak, sukses/gagal, laki/perempuan).",
+    kapan: "Satu sampel, data nominal dengan 2 kategori, ingin menguji apakah proporsi sesuai teori.",
+    contoh: "Apakah proporsi responden yang memilih 'setuju' (60%) berbeda secara signifikan dari proporsi yang diharapkan (50%)?",
+    syarat: "Data berskala nominal, hanya ada 2 kategori (dikotomi), satu sampel."
+  },
+  {
+    name: "X² One Sample (Chi-square satu sampel)",
+    skala: ["nominal"], jenis: ["nonpara"],
+    icon: "icon-nominal", emoji: "📊",
+    deskripsi: "Menguji apakah frekuensi observasi pada tiap kategori sesuai dengan frekuensi yang diharapkan berdasarkan teori atau distribusi tertentu. Cocok untuk lebih dari dua kategori.",
+    kapan: "Satu sampel, data nominal ≥2 kategori, membandingkan distribusi observasi vs teori.",
+    contoh: "Apakah distribusi agama mahasiswa (Islam 70%, Kristen 15%, lainnya 15%) sesuai dengan distribusi populasi umum?",
+    syarat: "Frekuensi harapan tiap sel ≥ 5, data nominal, satu sampel."
+  },
+  {
+    name: "Mc Nemar Test",
+    skala: ["nominal"], jenis: ["nonpara"],
+    icon: "icon-nominal", emoji: "🔄",
+    deskripsi: "Menguji perubahan proporsi pada dua pengukuran berpasangan dari subjek yang sama (sebelum-sesudah). Dirancang khusus untuk data dikotomi dari kelompok yang sama.",
+    kapan: "Dua kelompok berpasangan, data nominal dikotomi, mengukur perubahan sebelum-sesudah intervensi.",
+    contoh: "Apakah ada perubahan signifikan proporsi mahasiswa yang 'tidak paham' menjadi 'paham' setelah mengikuti pelatihan?",
+    syarat: "Data dikotomi (2 kategori), kelompok berpasangan/related, desain pre-post."
+  },
+  {
+    name: "Fisher Exact Probability",
+    skala: ["nominal"], jenis: ["nonpara"],
+    icon: "icon-nominal", emoji: "🎯",
+    deskripsi: "Alternatif Chi-square ketika sampel kecil atau frekuensi harapan sel kurang dari 5. Menghitung probabilitas eksak dari tabel kontingensi 2x2.",
+    kapan: "Dua kelompok independen, data nominal, sampel kecil (n<20) atau frekuensi harapan <5.",
+    contoh: "Apakah ada hubungan antara jenis kelamin dan keputusan mengikuti organisasi pada kelompok mahasiswa baru yang kecil?",
+    syarat: "Tabel 2x2, dua kelompok bebas, sampel kecil, frekuensi harapan <5."
+  },
+  {
+    name: "X² Two Sample (Chi-square dua sampel)",
+    skala: ["nominal"], jenis: ["nonpara"],
+    icon: "icon-nominal", emoji: "📋",
+    deskripsi: "Menguji apakah ada perbedaan distribusi frekuensi antara dua kelompok independen. Uji yang paling umum untuk data nominal dengan dua kelompok bebas dan sampel besar.",
+    kapan: "Dua kelompok independen, data nominal, sampel cukup besar, frekuensi harapan tiap sel ≥5.",
+    contoh: "Apakah ada perbedaan proporsi pilihan partai politik antara kelompok laki-laki dan perempuan?",
+    syarat: "Dua kelompok bebas, frekuensi harapan ≥5 per sel, data nominal."
+  },
+  {
+    name: "X² for k Sample (Chi-square k sampel)",
+    skala: ["nominal"], jenis: ["nonpara"],
+    icon: "icon-nominal", emoji: "📐",
+    deskripsi: "Perluasan Chi-square untuk lebih dari dua kelompok. Menguji apakah ada perbedaan distribusi proporsi di antara beberapa kelompok sekaligus.",
+    kapan: "Lebih dari 2 kelompok, data nominal, ingin menguji perbedaan distribusi antar semua kelompok.",
+    contoh: "Apakah ada perbedaan pilihan metode belajar (online/offline/hybrid) antara mahasiswa Semester 1, 3, 5, dan 7?",
+    syarat: "Lebih dari 2 kelompok (bebas atau berpasangan), data nominal."
+  },
+  {
+    name: "Cochran Q Test",
+    skala: ["nominal"], jenis: ["nonpara"],
+    icon: "icon-nominal", emoji: "🔁",
+    deskripsi: "Perluasan Mc Nemar untuk lebih dari dua pengukuran berpasangan pada data dikotomi. Menguji apakah ada perubahan proporsi yang konsisten di tiga kondisi atau lebih.",
+    kapan: "Lebih dari 2 pengukuran berpasangan, data dikotomi, subjek diukur berulang kali.",
+    contoh: "Apakah proporsi mahasiswa yang 'berhasil' mengerjakan soal berbeda secara signifikan pada minggu ke-1, ke-3, dan ke-5 pelatihan?",
+    syarat: "Data dikotomi, >2 kondisi berpasangan, subjek yang sama diukur berulang."
+  },
+  {
+    name: "Contingency Coefficient C",
+    skala: ["nominal"], jenis: ["nonpara"],
+    icon: "icon-nominal", emoji: "🔗",
+    deskripsi: "Mengukur kekuatan hubungan (korelasi) antara dua variabel nominal. Nilainya berkisar antara 0 (tidak ada hubungan) hingga mendekati 1 (hubungan kuat). Diturunkan dari nilai Chi-square.",
+    kapan: "Mengukur asosiasi antara dua variabel nominal, setelah Chi-square terbukti signifikan.",
+    contoh: "Seberapa kuat hubungan antara jenis kelamin dan pilihan jurusan kuliah?",
+    syarat: "Dua variabel nominal, tabel kontingensi, sebaiknya digunakan bersama Chi-square."
+  },
+  {
+    name: "Run Test",
+    skala: ["ordinal"], jenis: ["nonpara"],
+    icon: "icon-ordinal", emoji: "🎲",
+    deskripsi: "Menguji apakah urutan atau sekuens data bersifat acak (random) atau menunjukkan pola tertentu. Digunakan untuk mendeteksi tren, pola siklus, atau non-randomness dalam data.",
+    kapan: "Satu sampel ordinal/nominal, ingin menguji kerandoman urutan data.",
+    contoh: "Apakah urutan jawaban benar-salah mahasiswa dalam ujian bersifat acak, atau ada pola menebak?",
+    syarat: "Satu sampel, data dikotomi atau ordinal, fokus pada urutan kemunculan nilai."
+  },
+  {
+    name: "Wilcoxon Matched Pairs",
+    skala: ["ordinal"], jenis: ["nonpara"],
+    icon: "icon-ordinal", emoji: "⚖️",
+    deskripsi: "Alternatif non-parametrik dari Paired t-test. Menguji apakah ada perbedaan signifikan antara dua pengukuran berpasangan dengan membandingkan ranking selisih skor.",
+    kapan: "Dua kelompok berpasangan, data ordinal atau interval yang tidak normal, desain pre-post.",
+    contoh: "Apakah ada perbedaan skor kepuasan mahasiswa sebelum dan sesudah perbaikan sistem akademik?",
+    syarat: "Dua kondisi berpasangan, data ordinal atau interval tidak normal, ukuran sampel ≥6."
+  },
+  {
+    name: "Mann-Whitney U Test",
+    skala: ["ordinal"], jenis: ["nonpara"],
+    icon: "icon-ordinal", emoji: "🏆",
+    deskripsi: "Alternatif non-parametrik dari Independent t-test. Membandingkan dua kelompok bebas dengan menguji apakah salah satu kelompok cenderung memiliki nilai lebih tinggi (ranking lebih tinggi).",
+    kapan: "Dua kelompok independen, data ordinal atau interval tidak normal.",
+    contoh: "Apakah ada perbedaan tingkat stres antara mahasiswa kos dan mahasiswa yang tinggal bersama orang tua?",
+    syarat: "Dua kelompok bebas, data ordinal atau interval tidak memenuhi asumsi normalitas."
+  },
+  {
+    name: "Friedman Test",
+    skala: ["ordinal"], jenis: ["nonpara"],
+    icon: "icon-ordinal", emoji: "📈",
+    deskripsi: "Alternatif non-parametrik dari Repeated Measure ANOVA. Menguji perbedaan di antara lebih dari dua kondisi berpasangan berdasarkan ranking dalam setiap baris subjek.",
+    kapan: "Lebih dari 2 kondisi berpasangan, data ordinal atau interval tidak normal.",
+    contoh: "Apakah ada perbedaan skor motivasi belajar mahasiswa pada bulan ke-1, ke-3, dan ke-6 program mentoring?",
+    syarat: ">2 kondisi berpasangan, subjek yang sama diukur berulang, data ordinal/interval tidak normal."
+  },
+  {
+    name: "Kruskal-Wallis Test",
+    skala: ["ordinal"], jenis: ["nonpara"],
+    icon: "icon-ordinal", emoji: "🏗️",
+    deskripsi: "Alternatif non-parametrik dari One Way ANOVA. Membandingkan lebih dari dua kelompok bebas menggunakan ranking. Jika signifikan, perlu uji post-hoc (Mann-Whitney dengan koreksi Bonferroni).",
+    kapan: "Lebih dari 2 kelompok independen, data ordinal atau tidak memenuhi asumsi ANOVA.",
+    contoh: "Apakah ada perbedaan tingkat kepuasan kerja antara PNS, karyawan swasta, dan wiraswasta?",
+    syarat: ">2 kelompok bebas, data ordinal atau interval tidak normal, tiap kelompok n≥5."
+  },
+  {
+    name: "Spearman Rank Correlation",
+    skala: ["ordinal"], jenis: ["nonpara"],
+    icon: "icon-ordinal", emoji: "📉",
+    deskripsi: "Mengukur kekuatan dan arah hubungan monotonis antara dua variabel ordinal (atau interval tidak normal). Menggunakan ranking, bukan nilai asli. Koefisien berkisar -1 hingga +1.",
+    kapan: "Mencari korelasi antara dua variabel ordinal, atau interval yang tidak normal.",
+    contoh: "Apakah ada hubungan antara peringkat kelas dan tingkat kepuasan terhadap pembelajaran?",
+    syarat: "Dua variabel ordinal atau interval tidak normal, hubungan tidak harus linier (cukup monotonis)."
+  },
+  {
+    name: "t-test (satu sampel)",
+    skala: ["interval"], jenis: ["parametrik"],
+    icon: "icon-interval", emoji: "📌",
+    deskripsi: "Menguji apakah rata-rata satu kelompok berbeda secara signifikan dari nilai yang ditetapkan (nilai teoritis/standar). Uji deskriptif dasar untuk data interval/rasio.",
+    kapan: "Satu sampel, data interval/rasio, membandingkan rata-rata sampel dengan nilai standar tertentu.",
+    contoh: "Apakah rata-rata IPK mahasiswa program A (3,2) berbeda secara signifikan dari standar IPK nasional (3,0)?",
+    syarat: "Data interval/rasio, distribusi normal, satu sampel."
+  },
+  {
+    name: "Paired Sample t-test",
+    skala: ["interval"], jenis: ["parametrik"],
+    icon: "icon-interval", emoji: "🔄",
+    deskripsi: "Membandingkan rata-rata dua pengukuran berpasangan dari subjek yang sama. Digunakan untuk desain pre-post atau ketika setiap data di kelompok 1 berpasangan dengan data di kelompok 2.",
+    kapan: "Dua pengukuran berpasangan (pre-post), data interval/rasio, distribusi normal.",
+    contoh: "Apakah ada perbedaan rata-rata skor ujian mahasiswa sebelum dan sesudah mengikuti bimbel intensif?",
+    syarat: "Data interval/rasio, dua kondisi berpasangan, selisih skor berdistribusi normal."
+  },
+  {
+    name: "Independent Sample t-test",
+    skala: ["interval"], jenis: ["parametrik"],
+    icon: "icon-interval", emoji: "⚔️",
+    deskripsi: "Membandingkan rata-rata dua kelompok yang berbeda dan tidak saling berhubungan. Uji parametrik paling umum untuk membandingkan dua kelompok pada data interval/rasio.",
+    kapan: "Dua kelompok bebas, data interval/rasio, distribusi normal, varians homogen.",
+    contoh: "Apakah ada perbedaan rata-rata pendapatan antara lulusan S1 dan D3?",
+    syarat: "Data interval/rasio, dua kelompok independen, distribusi normal, homogenitas varians (Levene's Test)."
+  },
+  {
+    name: "Repeated Measure ANOVA",
+    skala: ["interval"], jenis: ["parametrik"],
+    icon: "icon-interval", emoji: "🔁",
+    deskripsi: "Perluasan Paired t-test untuk lebih dari dua kondisi berpasangan. Menganalisis perubahan rata-rata dalam satu kelompok subjek yang diukur berulang kali pada beberapa kondisi atau waktu.",
+    kapan: "Satu kelompok, data interval/rasio, lebih dari dua waktu/kondisi pengukuran.",
+    contoh: "Apakah ada perubahan rata-rata skor kecemasan mahasiswa pada minggu ke-1, ke-4, ke-8, dan ke-12 perkuliahan?",
+    syarat: "Data interval/rasio, >2 kondisi berpasangan, normalitas, sphericity (Mauchly's test)."
+  },
+  {
+    name: "One Way ANOVA",
+    skala: ["interval"], jenis: ["parametrik"],
+    icon: "icon-interval", emoji: "📊",
+    deskripsi: "Membandingkan rata-rata lebih dari dua kelompok bebas berdasarkan satu faktor. Jika signifikan, perlu uji post-hoc (Tukey, Bonferroni, LSD) untuk mengetahui kelompok mana yang berbeda.",
+    kapan: "Lebih dari 2 kelompok bebas, satu faktor, data interval/rasio, distribusi normal.",
+    contoh: "Apakah ada perbedaan rata-rata produktivitas kerja antara karyawan dengan latar belakang S1, S2, dan S3?",
+    syarat: "Data interval/rasio, >2 kelompok independen, distribusi normal, homogenitas varians."
+  },
+  {
+    name: "Two Way ANOVA",
+    skala: ["interval"], jenis: ["parametrik"],
+    icon: "icon-interval", emoji: "🗂️",
+    deskripsi: "Menguji pengaruh dua faktor sekaligus terhadap satu variabel dependen, serta interaksi antara kedua faktor tersebut. Lebih efisien karena bisa melihat efek kombinasi dua variabel.",
+    kapan: "Lebih dari 2 kelompok, dua faktor independen, data interval/rasio, ingin melihat efek interaksi.",
+    contoh: "Apakah nilai ujian dipengaruhi oleh metode belajar (ceramah/diskusi) DAN jenis kelamin, serta apakah ada interaksi keduanya?",
+    syarat: "Data interval/rasio, dua faktor independen kategoris, normalitas, homogenitas varians."
+  },
+  {
+    name: "Pearson Correlation",
+    skala: ["interval"], jenis: ["parametrik"],
+    icon: "icon-interval", emoji: "📐",
+    deskripsi: "Mengukur kekuatan dan arah hubungan linier antara dua variabel interval/rasio. Koefisien r berkisar -1 (hubungan negatif sempurna) hingga +1 (hubungan positif sempurna). r=0 berarti tidak ada hubungan linier.",
+    kapan: "Mengukur korelasi antara dua variabel interval/rasio yang keduanya berdistribusi normal.",
+    contoh: "Apakah ada hubungan antara jumlah jam belajar per minggu dengan nilai IPK mahasiswa?",
+    syarat: "Dua variabel interval/rasio, distribusi normal bivariat, hubungan bersifat linier."
+  }
+];
+
+let activeFilter = 'semua';
+let searchQuery = '';
+
+function setFilter(filter, btn) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+function filterCards() {
+  searchQuery = document.getElementById('searchInput').value.toLowerCase();
+  renderCards();
+}
+
+function renderCards() {
+  const grid = document.getElementById('cardsGrid');
+  const filtered = data.filter(d => {
+    const matchFilter =
+      activeFilter === 'semua' ||
+      (activeFilter === 'nominal' && d.skala.includes('nominal')) ||
+      (activeFilter === 'ordinal' && d.skala.includes('ordinal')) ||
+      (activeFilter === 'interval' && d.skala.includes('interval')) ||
+      (activeFilter === 'parametrik' && d.jenis.includes('parametrik')) ||
+      (activeFilter === 'nonpara' && d.jenis.includes('nonpara'));
+    const matchSearch = !searchQuery || d.name.toLowerCase().includes(searchQuery) || d.deskripsi.toLowerCase().includes(searchQuery);
+    return matchFilter && matchSearch;
+  });
+
+  document.getElementById('countInfo').textContent = filtered.length + ' alat uji ditampilkan';
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="no-result">Tidak ada hasil ditemukan. Coba kata kunci lain.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map((d, i) => {
+    const skalaTags = d.skala.map(s => {
+      if (s === 'nominal') return '<span class="tag t-nominal">Nominal</span>';
+      if (s === 'ordinal') return '<span class="tag t-ordinal">Ordinal</span>';
+      return '<span class="tag t-interval">Interval/Rasio</span>';
+    }).join('');
+    const jenisTags = d.jenis.map(j => j === 'parametrik'
+      ? '<span class="tag t-parametrik">Parametrik</span>'
+      : '<span class="tag t-nonpara">Non-Parametrik</span>'
+    ).join('');
+    return `<div class="uji-card" id="card-${i}" onclick="toggleCard(${i})">
+      <div class="card-header">
+        <div class="card-icon ${d.icon}">${d.emoji}</div>
+        <div class="card-meta">
+          <div class="card-name">${d.name}</div>
+          <div class="card-tags">${skalaTags}${jenisTags}</div>
+        </div>
+        <div class="chevron">&#8964;</div>
+      </div>
+      <div class="card-body">
+        <div class="body-section">
+          <div class="body-label">Pengertian</div>
+          <div class="body-text">${d.deskripsi}</div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Kapan digunakan</div>
+          <div class="body-text">${d.kapan}</div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Syarat penggunaan</div>
+          <div class="body-text">${d.syarat}</div>
+        </div>
+        <div class="body-section">
+          <div class="body-label">Contoh kasus</div>
+          <div class="example-box">${d.contoh}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(i) {
+  const card = document.getElementById('card-' + i);
+  card.classList.toggle('open');
+}
+
+renderCards();
+</script>
